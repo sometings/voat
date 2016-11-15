@@ -15,18 +15,18 @@
 @{
     //var commentCount = Model.Comments.Count(c => c.Name != "deleted");
     var commentCount = CommentCounter.CommentCount(Model.ID);
-    
+
     bool anonymizedSubverse = false;
 
     string routeActiveSubverse = (string)ViewContext.RouteData.Values["subversetoshow"];
-    string commentsUrl = "/v/" + Model.Subverse + "/comments/" + Model.ID;
+    string commentsUrl = VoatPathHelper.CommentsPagePath(Model.Subverse, Model.ID);
 
     DateTime submissionDate = Model.CreationDate;
-    string postAge = Submissions.CalcSubmissionAge(submissionDate);
+    string postAge = Age.ToRelative(submissionDate);
 
     //if (Model.Subverses != null)
     //{
-        anonymizedSubverse = DataCache.Subverse.Retrieve(Model.Subverse).IsAnonymized;
+    anonymizedSubverse = Voat.Caching.DataCache.Subverse.Retrieve(Model.Subverse).IsAnonymized;
     //}
 
     //type 1 = message
@@ -36,10 +36,7 @@
             <p class="title">
                 @if (Model.FlairLabel != null && Model.FlairCss != null)
                 {
-                    if (routeActiveSubverse != string.Empty && routeActiveSubverse != "all" && routeActiveSubverse != null)
-                    {
-                        <span class="flair @Model.FlairCss" title="@Model.FlairLabel">@Model.FlairLabel</span>
-                    }
+                    <span class="flair linkflairlabel @Model.FlairCss" title="@Model.FlairLabel">@Model.FlairLabel</span>
                 }
                 <a class="title may-blank " href="@commentsUrl" tabindex="1" title="@Model.Title">@Model.Title</a>
                 <span class="domain">(<a href="/v/@Model.Subverse">v/@Model.Subverse</a>)</span>

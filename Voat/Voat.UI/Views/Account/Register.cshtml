@@ -15,7 +15,8 @@
 @model Voat.Models.ViewModels.RegisterViewModel
 
 @{
-    ViewBag.Title = "Voater registration";
+    var siteName = Settings.SiteName;
+    ViewBag.Title = siteName + "er registration";
 }
 
 <div id="container">
@@ -68,15 +69,20 @@
                             <p>Please solve the reCAPTCHA challenge below:</p>
                         </div>
                     </div>
-                    <div class="panel panel-default">
-                        @{Html.RenderPartial("_Captcha");}
-                    </div>
+
+                    if (!Settings.CaptchaDisabled)
+                    {
+                        <div class="panel panel-default">
+                            @{Html.RenderPartial("_Captcha");}
+                        </div>
+                    }
+
                     <div class="form-group">
                         <input type="submit" class="btn-whoaverse" value="Register" />
                     </div>
                 }
 
-                @section Scripts {
+                @section PageScripts {
                     @Scripts.Render("~/bundles/jqueryval")
                 }
 

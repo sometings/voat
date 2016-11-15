@@ -15,14 +15,24 @@
 @using Voat.Models.ViewModels;
 
 @{
-    string subverseAge = Submissions.CalcSubmissionAge(Model.CreationDate);
+    var userData = Voat.Domain.UserData.GetContextUserData();
+    System.Diagnostics.Debug.Assert(userData == null || userData.UserName == User.Identity.Name, "Context UserData and Identity UserName mismatch");
+
+    string subverseAge = Age.ToRelative(Model.CreationDate);
     string subverseOwner = "youcanclaimthissub";
 
-    var subOwner = Model.SubverseModerators.FirstOrDefault(n => n.Subverse == Model.Name && n.Power == 1);
 
-    if (subOwner != null)
+    if (String.IsNullOrEmpty(Model.CreatedBy))
     {
-        subverseOwner = subOwner.UserName;
+        var subOwner = Model.SubverseModerators.FirstOrDefault(n => n.Subverse == Model.Name && n.Power == 1);
+        if (subOwner != null)
+        {
+            subverseOwner = subOwner.UserName;
+        }
+    }
+    else
+    {
+        subverseOwner = Model.CreatedBy;
     }
 }
 
@@ -44,6 +54,9 @@
 
     <div class="spacer">
         <div class="titlebox">
+            
+            @Html.Partial("Sidebars/_SidebarModToolbox")
+
             <h1 class="hover whoaversename">
                 <a href="/v/@Model.Name" class="hover">@Model.Name</a>
                 <a href="/rss/@Model.Name" class="rss-icon"><img src="~/Graphics/feed-icon-14x14.png" alt="RSS feed for this subverse" /></a>
@@ -51,7 +64,7 @@
 
             @if (User.Identity.IsAuthenticated)
             {
-                if (UserHelper.IsUserSubverseSubscriber(User.Identity.Name, ViewBag.SelectedSubverse))
+                if (userData.IsUserSubverseSubscriber(ViewBag.SelectedSubverse))
                 {
                     <button type="button" onclick="return unsubscribe(this, '@Model.Name')" class="btn-whoaverse-paging btn-xs btn-default btn-unsub">unsubscribe</button>
                 }
@@ -60,7 +73,7 @@
                     <button type="button" class="btn-whoaverse-paging btn-xs btn-default btn-sub" onclick="return subscribe(this, '@Model.Name')">subscribe</button>
                 }
 
-                if (UserHelper.IsUserBlockingSubverse(User.Identity.Name, ViewBag.SelectedSubverse))
+                if (userData.IsUserBlockingSubverse(ViewBag.SelectedSubverse))
                 {
                     <button type="button" class="btn-whoaverse-paging btn-xs btn-default btn-unblocksubverse" onclick="return toggleBlockSubverse(this, '@Model.Name')">unblock</button>
                 }
@@ -75,17 +88,17 @@
             }
 
             <span class="subscribers">
-                <span id="subscriberCount" class="number">@ViewBag.SubscriberCount</span>
+                <span id="subscriberCount" class="number">@Model.SubscriberCount</span>
                 <span class="word">subscribers</span>
             </span>
             <p class="users-online fuzzed" title="number of users viewing this subverse in the past 15 minutes">
                 <span class="number">~@ViewBag.OnlineUsers</span>
                 <span class="word">users here now</span>
             </p>
-            @if (User.Identity.IsAuthenticated && UserHelper.IsUserSubverseModerator(User.Identity.Name, Model.Name))
+            @if (User.Identity.IsAuthenticated && ModeratorPermission.IsModerator(User.Identity.Name, Model.Name))
             {
                 <div class="leavemoderator">
-                    you are a moderator of this subverse. (<a href="/v/@Model.Name/about/moderators/resign">change</a>)
+                    you are a moderator of this subverse. (<a href="/v/@Model.Name/about/moderators/resign">resign</a>)
                 </div>
             }
             <form action="#" class="usertext" onsubmit="return post_form(this, 'editusertext')" id="form-xxxx">
@@ -105,7 +118,7 @@
                     <span class="age">a community for <time title="@Model.CreationDate" datetime="@Model.CreationDate">@subverseAge</time></span>
                     @if (Model.IsAnonymized)
                     {
-                    <p>This subverse is permamently anonymized: all usernames are hidden and voting is disabled.</p>
+                    <p>This subverse is anonymized: all usernames are hidden.</p>
                     }
                     </p>
                     <div class="minimum-ccp-downvote">
@@ -113,7 +126,9 @@
                             Minimum CCP required to downvote in this sub: @Model.MinCCPForDownvote
                             @if (User.Identity.IsAuthenticated)
                             {
-                            <p>Your CCP for this sub: @Karma.CommentKarmaForSubverse(User.Identity.Name, Model.Name)</p>
+                                var q = new Voat.Domain.Query.QueryUserContributionPoints(Voat.Domain.Models.ContentType.Comment, Model.Name);
+                                var r = q.Execute();
+                                <p>Your CCP for this sub: @r.Sum</p>
                             }
                             </p>
                         </div>
@@ -122,8 +137,15 @@
                 </div>
             </div>
             <div class="spacer">
+                <div class="sidecontentbox">
+                    @{
+                        Html.RenderAction("RenderAd", "Ad", new { subverse = Model.Name });
+                    }
+                </div>
+            </div>
+            <div class="spacer">
                 <div class="sidecontentbox ">
-                    <a class="helplink message-moderators-temporary-class" title="Message the Moderators" href="/messaging/compose?recipient=v/@Model.Name">message the moderators</a>
+                    <a class="helplink message-moderators-temporary-class" title="Message the Moderators" href="/messages/compose?recipient=v/@Model.Name">message the moderators</a>
                     <div class="title">
                         <h1 class="alert-h1">MODERATORS</h1>
                     </div>
@@ -134,22 +156,5 @@
                     </ul>
                 </div>
             </div>
-            @if (!Settings.SignalRDisabled)
-            {
-                @Html.Partial("Sidebars/_SidebarChat", Model)
-            }
-            <div class="spacer spacersection">
-                <div class="sidecontentbox ">
-                    <div class="title">
-                        <h1 class="alert-h1">ANNOUNCEMENTS</h1>
-                    </div>
-                    <div class="sidecontentbox content">
-                        <p>We're looking for people to help us beta test our new API. <a href="/v/voatdev/comments/88531">Click here</a> to find out how you can participate.</p>
-                    </div>
-                </div>
-            </div>
-            @if(User.Identity.IsAuthenticated && UserHelper.IsUserSubverseModerator(User.Identity.Name, Model.Name))
-            {
-                @Html.Partial("Sidebars/_SidebarModToolbox")
-            }
+            @Html.Partial("~/Views/ModLog/_ModLogSidebarLinks.cshtml", Model.Name)
         </div>

@@ -18,22 +18,8 @@
     ViewBag.Title = Settings.SiteSlogan;
 
     string sortingMode = ViewBag.SortingMode;
-    string urlaction;
+    string urlaction = "DomainIndex";
 
-    if (sortingMode != "new")
-    {
-        urlaction = "DomainIndex";
-    }
-    else
-    {
-        urlaction = "DomainIndexSorted";
-    }
-
-    int commentContributionPoints = 0;
-    if (User.Identity.IsAuthenticated)
-    {
-        commentContributionPoints = Karma.CommentKarma(User.Identity.Name);
-    }  
 }
 
 <style type="text/css">
@@ -78,7 +64,7 @@
                 <div class="submission id-@submission.ID even link @submissionClass" data-fullname="@submission.ID" data-ups="@submission.Votes" data-downs="">
                     <p class="parent"></p>
 
-                    @Html.Partial("_votingIconsSubmission", submission, new ViewDataDictionary { { "CCP", commentContributionPoints } })                    
+                    @Html.Partial("_VotingIconsSubmission", submission)                    
                     @Html.Partial("~/Views/Shared/Submissions/_Submission.cshtml", submission)
 
                     <div class="child"></div>

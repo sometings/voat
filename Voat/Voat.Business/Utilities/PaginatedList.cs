@@ -20,10 +20,12 @@ namespace Voat.Utilities
 {
     public class PaginatedList<T> : List<T>
     {
-
         public int PageIndex { get; private set; }
+
         public int PageSize { get; private set; }
+
         public int TotalCount { get; private set; }
+
         public int TotalPages { get; private set; }
 
         public PaginatedList(IQueryable<T> source, int pageIndex, int pageSize)
@@ -37,8 +39,32 @@ namespace Voat.Utilities
         }
 
         //IAmAGate: Perf mods for caching
-        public PaginatedList(IList<T> source, int pageIndex, int pageSize, int totalCount = 50000)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="pageIndex"></param>
+        /// <param name="pageSize"></param>
+        /// <param name="totalCount">If set to -1, the code will attempt to control paging without knowing the full count.</param>
+        public PaginatedList(IEnumerable<T> source, int pageIndex, int pageSize, int totalCount = -1)
         {
+
+            if (totalCount < 0)
+            {
+                int currentCount = source.Count();
+                int fakeTotal = currentCount;
+                if (currentCount < pageSize)
+                {
+                    //no future pages
+                    fakeTotal = Math.Max((pageIndex), 0) * pageSize + currentCount;
+                }
+                else
+                {
+                    fakeTotal = (pageIndex + 1) * pageSize + 1;
+                }
+                totalCount = fakeTotal;
+            }
+
             PageIndex = pageIndex;
             PageSize = pageSize;
             TotalCount = totalCount;
@@ -46,7 +72,7 @@ namespace Voat.Utilities
 
             AddRange(source);
         }
-
+        
         public bool HasPreviousPage
         {
             get

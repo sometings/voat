@@ -18,12 +18,6 @@
     string sortingMode = ViewBag.SortingMode;
     string urlaction = "";
 
-    int commentContributionPoints = 0;
-    if (User.Identity.IsAuthenticated)
-    {
-        commentContributionPoints = Karma.CommentKarma(User.Identity.Name);
-    }
-
     switch (sortingMode)
     {
         case "new":
@@ -43,6 +37,10 @@
     }
 }
 
+@section PageHeader {
+    @Html.Partial("_SubverseStylesheetLink", selectedSubverse, new ViewDataDictionary())
+}
+
 <style type="text/css">
     body > .content .link .rank {
         width: 3.2ex;
@@ -59,21 +57,10 @@
         @Html.Partial("~/Views/Shared/Sidebars/_SidebarFrontpage.cshtml")
     }
 
-    <style type="text/css" id="custom_css">
-         @if (User.Identity.IsAuthenticated && !UserHelper.CustomCssDisabledForUser(User.Identity.Name))
-        {
-            Html.RenderAction("StylesheetForSelectedSubverse", "Subverses", new {selectedSubverse = selectedSubverse});
-        }
-        else if (!User.Identity.IsAuthenticated)
-        {
-            Html.RenderAction("StylesheetForSelectedSubverse", "Subverses", new {selectedSubverse = selectedSubverse});
-        }
-    </style>
-
     <div class="content" role="main">
         @if (sortingMode == "top")
         {
-            <div id="sortingThingy" class="">
+            <div id="sortingThingy" class="sorting-thingy">
                 @Html.RouteLink("day", urlaction) | 
                 @Html.RouteLink("week", urlaction, new {time = "week"}) | 
                 @Html.RouteLink("month", urlaction, new {time = "month"}) |
@@ -125,7 +112,7 @@
                 <div class="submission id-@submission.ID @classEvenOrOdd link @submissionClass" data-fullname="@submission.ID" data-ups="@submission.Votes" data-downs="">
                     <p class="parent"></p>
 
-                    @Html.Partial("_votingIconsSubmission", submission, new ViewDataDictionary {{"CCP", commentContributionPoints}})
+                    @Html.Partial("_VotingIconsSubmission", submission)
                     @Html.Partial("~/Views/Shared/Submissions/_Submission.cshtml", submission)
 
                     <div class="child"></div>

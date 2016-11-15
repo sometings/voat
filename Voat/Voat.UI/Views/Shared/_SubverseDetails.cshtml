@@ -13,13 +13,14 @@
 @model Voat.Data.Models.Subverse
 
 @{
-    string subverseAge = Submissions.CalcSubmissionAge(Model.CreationDate);
+    string subverseAge = Age.ToRelative(Model.CreationDate);
+    var userData = Voat.Domain.UserData.GetContextUserData();
 }
 
 <div class="midcol">
     @if (User.Identity.IsAuthenticated)
     {
-        if (UserHelper.IsUserSubverseSubscriber(User.Identity.Name, ViewBag.SelectedSubverse))
+        if (userData.IsUserSubverseSubscriber(ViewBag.SelectedSubverse))
         {
             <button type="button" onclick="return unsubscribe(this, '@Model.Name')" class="btn-whoaverse-paging btn-xs btn-default btn-unsub">unsubscribe</button>
         }
@@ -54,7 +55,7 @@
     </div>
     <p class="">
         <span class="">
-            <span id="subscribercount" class="number">@ViewBag.SubscriberCount</span>
+            <span id="subscribercount" class="number">@Model.SubscriberCount</span>
             <span class="word">subscribers, a community for @subverseAge</span>
         </span>
     </p>
